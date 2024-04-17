@@ -12,10 +12,9 @@
 
 ```json
 {
-    "encryptedData": <base64 string of DES encrypted data>,
-    "ttl": <number of days, max: 7>,
-    "iv": <96 bit initialization vector>,
-    "hashSuffix": <hex string of the last 4 digits of sha256 hash of the password>
+    "encryptedData": "<base64 string of AES encrypted data>",
+    "ttl": "<number of minutes, 1(a minute) - 10080 (a week)>",
+    "ivSuffix": "<last 32 bits (4 bytes) of initialization vector>",
 }
 ```
 
@@ -23,8 +22,8 @@
 
 ```json
 {
-    "id": "string of id",
-    "expiresAt": 
+    "id": "<string of id>",
+    "expiresAt": "<epoch in sec>"
 }
 ```
 ## Get a message
@@ -35,13 +34,12 @@
 
 ### URL
 
-`/api/v1/messages/<id>?hashSuffix=<hashSuffix>`
+`/api/v1/messages/<id>?ivSuffix=<ivSuffix>`
 
 ### Response Body
 
 ```json
 {
-    "encryptedData": <base64>,
-    "iv": <96 bit initialization vector>
+    "encryptedData": "<base64 string of encrypted data>",
 }
 ```

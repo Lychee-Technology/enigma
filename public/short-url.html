@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypt Message</title>
+</head>
+
+<body>
+    <h1>Enigma</h1>
+    <p>Enigma is a simple web application that allows you to encrypt and share messages.</p>
+    <p>Your messages and password will stay within your browser.</p>
+    <div>
+        <label for="inputText">Encrypted Message</label>
+        <textarea id="inputText" name="inputText" rows="4" cols="50"></textarea>
+    </div>
+    <div>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" />
+    </div>
+    <div>
+        <button id="exec">Decrypt</button>
+    </div>
+    <div>
+        <label for="outputText">Decrypted Message</label>
+        <textarea id="outputText" name="outputText" rows="4" cols="50" readonly></textarea>
+    </div>
+    <script src="js/short_url.js"></script>
+</body>
+
+</html>
