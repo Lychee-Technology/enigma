@@ -11,54 +11,98 @@
 </head>
 
 <body class="container">
-    <div class="row align-items-center my-2">
-        <div class="col-md-1 align-middle">
-            <a class="navbar-brand" href="#">
-                <h1>Enigma</h1>
-            </a>
-        </div>
-        <div class="col-md-8 offset-md-1 align-middle">
-            <ul class="nav nav-pills" id="pills-tab" role="tablist">
-                <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link active" id="pills-encryptor-tab" data-bs-toggle="pill"
-                        data-bs-target="#pills-encryptor" type="button" role="tab" aria-controls="pills-encryptor"
-                        aria-selected="true">Encryptor</button>
+    <div id="error-message-container" class="d-none alert alert-danger">
+        <span id="error-message">Error</span>
+    </div>
+    <nav>
+        <div class="align-middle">
+            <ul class="nav nav-underline align-items-center" id="underline-tab" role="tablist">
+                <li class="nav-item mx-1">
+                    <a class="navbar-brand" href="#">
+                        <h1>Enigma</h1>
+                    </a>
                 </li>
                 <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link" id="pills-decryptor-tab" data-bs-toggle="pill"
-                        data-bs-target="#pills-decryptor" type="button" role="tab" aria-controls="pills-decryptor"
-                        aria-selected="false">Decryptor</button>
+                    <button class="nav-link active" id="underline-encryptor-tab" data-bs-toggle="tab"
+                        data-bs-target="#underline-encryptor" type="button" role="tab"
+                        aria-controls="underline-encryptor" aria-selected="true">
+                        <h5>Encryptor</h5>
+                    </button>
+                </li>
+                <li class="nav-item mx-1" role="presentation">
+                    <button class="nav-link" id="underline-url-shortener-tab" data-bs-toggle="tab"
+                        data-bs-target="#underline-url-shortener" type="button" role="tab"
+                        aria-controls="underline-url-shortener" aria-selected="false">
+                        <h5>URL Shortener</h5>
+                    </button>
                 </li>
             </ul>
         </div>
-    </div>
-    <div class="tab-content" id="pills-tabContent">
-        <div class="tab-pane fade show active" id="pills-encryptor" role="tabpanel"
-            aria-labelledby="pills-encryptor-tab" tabindex="0">
+    </nav>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="underline-encryptor" role="tabpanel"
+            aria-labelledby="underline-encryptor-tab" tabindex="0">
+            <form id="encrypt-message-form" class="needs-validation" novalidate>
+                <div class="mb-1 input-group">
+                    <span class="input-group-text" for="message">
+                        Message
+                    </span>
+                    <textarea class="form-control" aria-label="Message" id="message" name="inputText" rows="4"
+                        minlength="1" maxlength="2000" required></textarea>
+                    <div class="invalid-feedback">
+                        Please provide a message.
+                    </div>
+                </div>
+                <div class="row justify-content-end">
+                    <span class="col-1 text-end" id="message-char-counter">0/2000</span>
+                </div>
+
+                <div class="mb-1 row">
+                    <div class="col input-group">
+                        <label class="input-group-text" for="password" required>Password</label>
+                        <input class="form-control" id="password" type="password" name="password" required />
+                        <div class="invalid-feedback">
+                            Please provide a password.
+                        </div>
+                    </div>
+                    <div class="col input-group">
+                        <label class="input-group-text" for="ttl" required>Exipres</label>
+                        <select class="form-control" id="ttl" name="ttl">
+                            <option value="1">1 hour</option>
+                            <option value="24" selected>1 day</option>
+                            <option value="168">1 week</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-1 justify-content-end">
+                    <div class="col-auto">
+                        <div class="progress invisible" role="progressbar" id="encrypt-message-progress"
+                            aria-label="Animated striped example" aria-valuenow="100" aria-valuemin="0"
+                            aria-valuemax="100">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mb-3" id="encrypt-message" name="encrypt-message"
+                            type="button">Encrypt</button>
+                    </div>
+                </div>
+            </form>
             <div class="mb-1">
-                <label class="form-label" for="inputText">
-                    <h3>Message</h3>
-                </label>
-                <textarea class="form-control" name="inputText" rows="4"></textarea>
-            </div>
-            <div class="row mb-1 justify-content-start">
-                <div class="col-md-1">
-                    <label class="col-form-label" for="password">Password</label>
+                <div>
+                    <label class="form-label" for="messageUrl">
+                        <h6>Message URL</h6>
+                        <span class="fst-italic fw-lighter">please send URL and the password to your recipient
+                            separately.</span>
+                    </label>
+                    <div class="input-group">
+                        <input class="form-control" id="messageUrl" name="messageUrl" value="test2" readonly></input>
+                        <button class="input-group-text btn btn-success bi-clipboard"
+                            data-clipboard-target="#messageUrl" data-bs-toggle="tooltip"
+                            data-bs-title="Copy to clipboard" title>
+                        </button>
+                    </div>
                 </div>
-                <div class="col-md-11">
-                    <input class="form-control" type="password" name="password" />
-                </div>
-            </div>
-            <div class="row mb-1 justify-content-end">
-                <div class="col-auto">
-                    <button class="btn btn-primary" name="exec">Decrypt</button>
-                </div>
-            </div>
-            <div class="mb-1">
-                <label class="form-label" for="outputText">
-                    <h3>Encrypted Message</h3>
-                </label>
-                <textarea class="form-control" name="outputText" rows="4" readonly></textarea>
             </div>
             <div class="accordion" id="passwords-generator">
                 <div class="accordion-item">
@@ -77,41 +121,48 @@
                     </div>
                 </div>
             </div>
-
         </div>
-        <div class="tab-pane fade" id="pills-decryptor" role="tabpanel" aria-labelledby="pills-decryptor-tab"
-            tabindex="0">
+        <div class="tab-pane fade" id="underline-url-shortener" role="tabpanel"
+            aria-labelledby="underline-url-shortener-tab" tabindex="0">
             <div class="mb-1">
-                <label class="form-label" for="inputText">
-                    <h3>Encrypted Message</h3>
-                </label>
-                <textarea class="form-control" id="inputText" name="inputText" rows="4"></textarea>
-            </div>
-            <div class="row mb-1 justify-content-start">
-                <div class="col-md-1">
-                    <label class="col-form-label" for="password">Password</label>
-                </div>
-                <div class="col-md-11">
-                    <input class="form-control" type="password" id="password" name="password" />
-                </div>
-            </div>
-            <div class="row justify-content-end">
-                <div class="col-auto">
-                    <button class="btn btn-primary" id="exec">Decrypt</button>
-                </div>
+                <form id="shorten-url-form" class="needs-validation" novalidate>
+                    <label class="form-label" for="inputText">
+                        <h6>URL</h6>
+                    </label>
+                    <input type="url" class="form-control mb-2" id="shorten-url-input" name="inputText" rows="4" required>
+                    <div class="invalid-feedback">
+                        Please provide a valid URL.
+                    </div>
+                    <div class="row justify-content-end">
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-primary" id="shorten-url-button">Shorten URL</button>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div>
-                <label class="form-label" for="outputText">
-                    <h3>Decrypted Message</h3>
+                <label class="form-label" for="shortUrl">
+                    <h6>Short URL</h6>
                 </label>
-                <textarea class="form-control" id="outputText" name="outputText" rows="4" readonly></textarea>
+                <div class="input-group">
+                    <input class="form-control" id="shortUrl" name="shortUrl" value="test" readonly></input>
+                    <button class="input-group-text btn btn-success bi-clipboard" data-clipboard-target="#shortUrl"
+                        data-bs-toggle="tooltip" data-bs-title="Copy to clipboard" title>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-    <script src="js/crypto.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"
+        integrity="sha256-4XodgW4TwIJuDtf+v6vDJ39FVxI0veC/kSCCmnFp7ck=" crossorigin="anonymous"></script>
+    <script src="js/crypto.js"></script>
+
+    <div class="container overflow-hidden text-center my-3">
+        Made with <span style="color: red;">💖︎</span> by <a href="https://ruoshi.li">Ruoshi</a>
+    </div>
 </body>
 
 </html>

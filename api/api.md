@@ -1,12 +1,8 @@
 # APIs
 
-## POST a message
+## Send a message
 
-### Method
-`POST`
-### URL
-`/api/v1/messages`
-
+`POST /api/v1/messages`
 
 ### Request Body
 
@@ -14,7 +10,7 @@
 {
     "encryptedData": "<base64 string of AES encrypted data>",
     "ttl": "<number of minutes, 1(a minute) - 10080 (a week)>",
-    "ivSuffix": "<last 32 bits (4 bytes) of initialization vector>",
+    "cookie": "<last 32 bits (4 bytes) of initialization vector>",
 }
 ```
 
@@ -28,18 +24,24 @@
 ```
 ## Get a message
 
-### Method
-
-`GET`
-
-### URL
-
-`/api/v1/messages/<id>?ivSuffix=<ivSuffix>`
+`GET /api/v1/messages/<id>?ivSuffix=<ivSuffix>`
 
 ### Response Body
 
 ```json
 {
     "encryptedData": "<base64 string of encrypted data>",
+}
+```
+
+## Create a short URL
+
+`POST /api/v1/shorturl`
+
+### Request Body
+
+```json
+{
+    "url": "<url>"
 }
 ```

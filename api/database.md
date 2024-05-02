@@ -11,14 +11,16 @@ There are 2 entities in the table:
 
 ### SKey
 It is the `shard key` of the table. 
-`SKey = base62(sha256(content)).substring(0, 5)`
-
-### PKey
-It is the  `primary key` of the tbale.
-`PKey = base62(sha256(content))`
+`SKey = base62(sha256(content)).substring(0, 3)`
 
 ### ShortId
+It is the  `primary key` of the tbale.
 It is a string which is the shortest prefix of `X (X > 5)` letters of the `base62(sha256(content))` which is globally unique.
+
+### ContentHash
+
+`ContentHash = base62(sha256(content))`
+
 
 ### Content
 It a string which maybe the URL or the encrypted message.
