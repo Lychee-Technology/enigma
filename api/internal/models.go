@@ -6,11 +6,12 @@ type EnigmaRecord struct {
 	Content     string
 	ContentHash string
 	Cookie      string
+	ExpiresAt   int64 // epoch time in seconds
 }
 
 type SaveMessageRequest struct {
 	EncryptedData string `json:"encryptedData"`
-	TtlHours           int64    `json:"ttlHours"`
+	TtlHours      int64  `json:"ttlHours"`
 	Cookie        string `json:"cookie"`
 }
 

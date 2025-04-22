@@ -3,166 +3,262 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="google-adsense-account" content="ca-pub-7128181034194619">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enigma</title>
+    <title>Enigma - Secure Messaging</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/main.css">
 </head>
 
-<body class="container">
-    <div id="error-message-container" class="d-none alert alert-danger">
-        <span id="error-message">Error</span>
-    </div>
-    <nav>
-        <div class="align-middle">
-            <ul class="nav nav-underline align-items-center" id="underline-tab" role="tablist">
-                <li class="nav-item mx-1">
-                    <a class="navbar-brand" href="#">
-                        <h1>Enigma</h1>
-                    </a>
-                </li>
-                <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link active" id="underline-encryptor-tab" data-bs-toggle="tab"
-                        data-bs-target="#underline-encryptor" type="button" role="tab"
-                        aria-controls="underline-encryptor" aria-selected="true">
-                        <h5>Encryptor</h5>
-                    </button>
-                </li>
-                <li class="nav-item mx-1" role="presentation">
-                    <button class="nav-link" id="underline-url-shortener-tab" data-bs-toggle="tab"
-                        data-bs-target="#underline-url-shortener" type="button" role="tab"
-                        aria-controls="underline-url-shortener" aria-selected="false">
-                        <h5>URL Shortener</h5>
-                    </button>
-                </li>
-            </ul>
+<body>
+    <div class="main-content-wrapper">
+        <a href="/" class="text-decoration-none">
+            <div class="app-header d-flex align-items-center justify-content-center">
+                <img src="apple-touch-icon.png" class="logo" style="width: 50px;">
+                <h1 class="text-center">Enigma</h1>
+            </div>
+        </a>
+        <div id="error-message-container" class="d-none alert alert-danger">
+            <span id="error-message">Error</span>
         </div>
-    </nav>
-
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="underline-encryptor" role="tabpanel"
-            aria-labelledby="underline-encryptor-tab" tabindex="0">
-            <form id="encrypt-message-form" class="needs-validation" novalidate>
-                <div class="mb-1 input-group">
-                    <span class="input-group-text" for="message">
-                        Message
-                    </span>
-                    <textarea class="form-control" aria-label="Message" id="message" name="inputText" rows="4"
-                        minlength="1" maxlength="2000" required></textarea>
-                    <div class="invalid-feedback">
-                        Please provide a message.
-                    </div>
-                </div>
-                <div class="row justify-content-end">
-                    <span class="col-1 text-end" id="message-char-counter">0/2000</span>
-                </div>
-
-                <div class="mb-1 row">
-                    <div class="col input-group">
-                        <label class="input-group-text" for="password" required>Password</label>
-                        <input class="form-control" id="password" type="password" name="password" required />
+        <!-- Encrypt Section (existing) -->
+        <div id="underline-encryptor" class="d-none">
+            <div class="content-padding">
+                <form id="encrypt-message-form" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label" for="message">
+                            <h6><i class="bi bi-pencil-square"></i>Message</h6>
+                        </label>
+                        <textarea class="form-control" aria-label="Message" id="message" name="inputText" rows="5"
+                            minlength="1" maxlength="2000" required
+                            placeholder="Type your secret message here..."></textarea>
                         <div class="invalid-feedback">
-                            Please provide a password.
+                            Please provide a message.
                         </div>
+                        <div class="text-end text-muted small mt-1" id="message-char-counter">0/2000</div>
                     </div>
-                    <div class="col input-group">
-                        <label class="input-group-text" for="ttl" required>Exipres</label>
-                        <select class="form-control" id="ttl" name="ttl">
-                            <option value="1">1 hour</option>
-                            <option value="24" selected>1 day</option>
-                            <option value="168">1 week</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row mb-1 justify-content-end">
-                    <div class="col-auto">
-                        <div class="progress invisible" role="progressbar" id="encrypt-message-progress"
-                            aria-label="Animated striped example" aria-valuenow="100" aria-valuemin="0"
-                            aria-valuemax="100">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%">
+
+                    <div class="mb-3">
+                        <label class="form-label" for="password">
+                            <h6><i class="bi bi-key-fill"></i>Password</h6>
+                        </label>
+                        <div class="input-group">
+                            <input class="form-control" id="password" type="password" name="password" required
+                                placeholder="Set a strong password" />
+                            <span class="input-group-text password-toggle-btn"
+                                onclick="togglePasswordVisibility('password', this)">
+                                <i class="bi bi-eye-slash"></i>
+                            </span>
+                            <div class="invalid-feedback">
+                                Please provide a password.
                             </div>
                         </div>
-                        <button class="btn btn-primary mb-3" id="encrypt-message" name="encrypt-message"
-                            type="button">Encrypt</button>
                     </div>
-                </div>
-            </form>
-            <div class="mb-1">
-                <div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="ttl">
+                            <h6><i class="bi bi-clock"></i>Expires After</h6>
+                        </label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range" id="ttl" name="ttl" min="1" max="7" step="1"
+                                value="3">
+                            <span class="ms-3 text-muted fw-medium" id="ttl-label">3 days</span>
+                        </div>
+                        <!-- Hidden select for actual form submission if needed, or update value via JS -->
+                        <select class="d-none" id="ttl-select" name="ttl_hours">
+                            <option value="24">1 day</option>
+                            <option value="48">2 days</option>
+                            <option value="72" selected>3 days</option>
+                            <option value="96">4 days</option>
+                            <option value="120">5 days</option>
+                            <option value="144">6 days</option>
+                            <option value="168">7 days</option>
+                        </select>
+                    </div>
+
+
+                    <div class="row mb-3 justify-content-center">
+                        <div class="col-md-8">
+                            <div class="progress invisible mb-2" role="progressbar" id="encrypt-message-progress"
+                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"
+                                style="height: 5px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                    style="width: 100%">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100" id="encrypt-message" name="encrypt-message" disabled
+                                type="button"><i class="bi bi-send"></i>Create Encrypted Message</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="result-box d-none" id="message-result-box"> <!-- Initially hidden -->
                     <label class="form-label" for="messageUrl">
-                        <h6>Message URL</h6>
-                        <span class="fst-italic fw-lighter">please send URL and the password to your recipient
-                            separately.</span>
+                        <h6><i class="bi bi-link-45deg"></i>Share this secure link:</h6>
                     </label>
                     <div class="input-group">
-                        <input class="form-control" id="messageUrl" name="messageUrl" value="test2" readonly></input>
-                        <button class="input-group-text btn btn-success bi-clipboard"
+                        <input class="form-control" id="messageUrl" name="messageUrl" value="" readonly>
+                        <button class="input-group-text btn btn-secondary bi-clipboard"
                             data-clipboard-target="#messageUrl" data-bs-toggle="tooltip"
                             data-bs-title="Copy to clipboard" title>
                         </button>
                     </div>
+                    <p class="text-muted small mt-2 mb-0" id="expiry-info">
+                        <i class="bi bi-clock"></i> This message will expire on [Date].
+                    </p>
+                    <p class="text-muted small mt-1">
+                        The recipient will need the password to decrypt this message.
+                    </p>
                 </div>
-            </div>
-            <div class="accordion" id="passwords-generator">
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                            Password Generator by passwords-generator.org
-                        </button>
-                    </h2>
-                    <div id="collapseOne" class="accordion-collapse collapse">
-                        <div class="accordion-body">
-                            <iframe id="iframe" src="https://passwords-generator.org/widget/"
-                                style="width:100%;border:none;"></iframe>
-                            <script>window.onmessage = (e => { e.data.hasOwnProperty("frameHeight") && (document.getElementById("iframe").style.height = `${e.data.frameHeight + 30}px`) });</script>
+
+                <!-- Password Generator Accordion (existing) -->
+                <div class="accordion mt-4" id="passwords-generator">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                Need a strong password? Check out this awesome Password Generator!
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#passwords-generator">
+                            <div class="accordion-body p-0">
+                                <iframe id="passwords-generator-frame" src="https://passwords-generator.org/widget/"
+                                    style="width:100%; border:none; min-height: 300px;"></iframe>
+                                <script>window.onmessage = (e => { e.data.hasOwnProperty("frameHeight") && (document.getElementById("passwords-generator-frame").style.height = `${e.data.frameHeight + 30}px`) });</script>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="tab-pane fade" id="underline-url-shortener" role="tabpanel"
-            aria-labelledby="underline-url-shortener-tab" tabindex="0">
-            <div class="mb-1">
-                <form id="shorten-url-form" class="needs-validation" novalidate>
-                    <label class="form-label" for="inputText">
-                        <h6>URL</h6>
-                    </label>
-                    <input type="url" class="form-control mb-2" id="shorten-url-input" name="inputText" rows="4" required>
-                    <div class="invalid-feedback">
-                        Please provide a valid URL.
+
+        <!-- New Decrypt Section -->
+        <div id="decrypt-section" class="d-none">
+            <div class="content-padding">
+                <form id="decrypt-message-form" novalidate>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="decryptPassword">
+                            <h6><i class="bi bi-key-fill"></i>Password</h6>
+                        </label>
+                        <div class="input-group">
+                            <input class="form-control" id="decryptPassword" type="password" name="password" required
+                                placeholder="Enter the password" />
+                            <span class="input-group-text password-toggle-btn"
+                                onclick="togglePasswordVisibility('decryptPassword', this)">
+                                <i class="bi bi-eye-slash"></i>
+                            </span>
+                            <div class="invalid-feedback">
+                                Please provide a password.
+                            </div>
+                        </div>
                     </div>
-                    <div class="row justify-content-end">
-                        <div class="col-auto">
-                            <button type="button" class="btn btn-primary" id="shorten-url-button">Shorten URL</button>
+                    <div class="row mb-3 justify-content-center">
+                        <div class="col-md-8">
+                            <div class="progress invisible mb-2" role="progressbar" id="decrypt-progress"
+                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"
+                                style="height: 5px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                    style="width: 100%">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100" id="decrypt-message" type="button">
+                                <i class="bi bi-unlock"></i>
+                                Decrypt Message
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3 d-none">
+                        <label class="form-label" for="decryptMessage">
+                            <h6><i class="bi bi-lock-fill"></i>Message</h6>
+                        </label>
+                        <textarea class="form-control" id="decryptMessage" name="encryptedText" rows="5" readonly
+                            placeholder="Paste the encrypted message here..." required></textarea>
+                        <div class="invalid-feedback">
                         </div>
                     </div>
                 </form>
-            </div>
-            <div>
-                <label class="form-label" for="shortUrl">
-                    <h6>Short URL</h6>
-                </label>
-                <div class="input-group">
-                    <input class="form-control" id="shortUrl" name="shortUrl" value="test" readonly></input>
-                    <button class="input-group-text btn btn-success bi-clipboard" data-clipboard-target="#shortUrl"
-                        data-bs-toggle="tooltip" data-bs-title="Copy to clipboard" title>
-                    </button>
+
+                <div class="result-box d-none" id="decrypted-message-box"> <!-- Initially hidden -->
+                    <label class="form-label" for="decryptedMessage">
+                        <h6><i class="bi bi-check-circle"></i>Decrypted Message</h6>
+                    </label>
+                    <textarea class="form-control" id="decrypt-result" name="decryptedMessage" rows="5"
+                        readonly></textarea>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        <!-- Cloudflare Turnstile widget -->
+        <div id="cf-turnstile" class="cf-turnstile mb-3" data-sitekey="0x4AAAAAABRnnh8XJZOfwEP-"
+            data-callback="onTurnstileSuccess" error-callback="resetTurnstile"></div>
+
+        <div class="app-footer">
+            Made with <span style="color: red;">💖︎</span> by <a href="https://lychee.technology"
+                class="text-decoration-none">Lychee Technology Inc.</a>
+        </div>
+    </div> <!-- End main-content-wrapper -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.min.js"
+        integrity="sha384-VQqxDN0EQCkWoxt/0vsQvZswzTHUVOImccYmSyhJTp7kGtPed0Qcx8rK9h9YEgx+"
         crossorigin="anonymous"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"
         integrity="sha256-4XodgW4TwIJuDtf+v6vDJ39FVxI0veC/kSCCmnFp7ck=" crossorigin="anonymous"></script>
-    <script src="js/crypto.js"></script>
 
-    <div class="container overflow-hidden text-center my-3">
-        Made with <span style="color: red;">💖︎</span> by <a href="https://ruoshi.li">Ruoshi</a>
-    </div>
+    <script>
+        // Password visibility toggle
+        function togglePasswordVisibility(inputId, btn) {
+            const passwordInput = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            } else {
+                passwordInput.type = "password";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            }
+        }
+
+        function onTurnstileSuccess(token) {
+            // Enable the submit button when Turnstile is verified
+            document.getElementById('encrypt-message').removeAttribute('disabled');
+
+            // Store the token for submission
+            const turnstileDiv = document.getElementById('cf-turnstile');
+            turnstileDiv.dataset.token = token;
+            turnstileDiv.classList.add('d-none');
+        }
+
+        // Reset Turnstile if an error occurs
+        function resetTurnstile() {
+            turnstile.reset();
+            const turnstileDiv = document.getElementById('cf-turnstile');
+            document.getElementById('encrypt-message').setAttribute('disabled', 'disabled');
+            turnstileDiv.classList.remove('d-none');
+            turnstileDiv.dataset.token = '';
+        }
+
+        (function() {
+            resetTurnstile();
+        })();
+    </script>
+
+    <!-- Cloudflare Turnstile widget -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Link to your crypto logic -->
+    <script type="module" src="js/main.js"></script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YTSG6BQ14S"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-YTSG6BQ14S');
+    </script>
 </body>
 
 </html>

@@ -1,0 +1,27 @@
+services:
+  enigma:
+    hostname: enigma
+    container_name: enigma
+    image: lychee.technology/enigma:latest
+    depends_on:
+      - kvlite
+    env_file:
+      - .env
+    environment:
+      - NOSQL_ENDPOINT=kvlite:29999
+      - ENIGMA_STAGE=Local 
+    ports:
+      - "1443:443"
+    restart: unless-stopped
+  kvlite:
+    hostname: kvlite
+    container_name: kvlite
+    image: ghcr.io/oracle/nosql:latest-ce
+    environment:
+      KV_STORAGESIZE: 2
+      KV_PROXY_PORT: 29999
+    volumes:
+      - './data:/kvroot'
+    ports:
+      - "29999:29999"
+    restart: unless-stopped
