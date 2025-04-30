@@ -21,12 +21,13 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
         const url = `${apiBaseUrl()}/messages/${id}/${cookie}`;
         console.log("getEncryptedData from: ", url);
         const res = await fetch(url, {
+            cache: "no-store",
             headers: {
                 "Authorization": `Turnstile ${turnstileToken}`
             }
         });
         if (!res.ok) {
-            throw new Error({
+            throw ({
                 message: `Failed to fetch encrypted data. Status: ${res.statusText}`,
                 status: res.status
             });
@@ -89,10 +90,14 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
         e.trigger.classList.remove('bi-clipboard')
         e.trigger.classList.add('bi-check-circle-fill')
         e.clearSelection();
+        setTimeout(() => {
+            resetToolTip(e.trigger)
+            e.trigger.classList.remove('bi-check-circle-fill')
+            e.trigger.classList.add('bi-clipboard')
+        }, 5000);
         navigator.share({
-            title: "Encrypted message",
-            text: "Here is your encrypted message.",
-            url: e.trigger.getAttribute('data-bs-url')
+            title: "Hey there! I’ve got an encrypted message for you, and the password is right after this. 😋",
+            url: document.getElementById("messageUrl").value 
         }).catch(err => {
             console.error("Error sharing the message:", err);
         });
@@ -186,7 +191,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
         document.getElementById('message-result-box').classList.remove('d-none');
     }
 
-    messageInput.addEventListener("keyup", e => {
+    messageInput.addEventListener("input", e => {
         messageCharCounter.innerText = `${e.target.value.length}/2000`
     })
 
@@ -222,6 +227,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
             const decryptedMessage = await decrypt(encryptedData, password);
             document.getElementById('decrypt-result').value = decryptedMessage;
             document.getElementById('decrypted-message-box').classList.remove('d-none');
+            document.getElementById('decryption-reminder').innerHTML = `<span>ℹ️ Just a heads up, your message has been deleted. <b>DO NOT RELOAD!</b></span>`;
         } catch (err) {
             console.error("Error fetching encrypted data:", err);
             if (err.status >= 400 && err.status < 500) {
@@ -267,9 +273,9 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     const path = location.pathname;
     if (path.length > 3) {
         document.getElementById('decrypt-section').classList.remove('d-none');
-        document.getElementById('underline-encryptor').classList.add('d-none');
+        document.getElementById('encrypt-section').classList.add('d-none');
     } else {
-        document.getElementById('underline-encryptor').classList.remove('d-none');
+        document.getElementById('encrypt-section').classList.remove('d-none');
         document.getElementById('decrypt-section').classList.add('d-none');
     }
 })();

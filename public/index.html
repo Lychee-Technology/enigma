@@ -24,7 +24,7 @@
             <span id="error-message">Error</span>
         </div>
         <!-- Encrypt Section (existing) -->
-        <div id="underline-encryptor" class="d-none">
+        <div id="encrypt-section" class="d-none">
             <div class="content-padding">
                 <form id="encrypt-message-form" class="needs-validation" novalidate>
                     <div class="mb-3">
@@ -140,6 +140,12 @@
                 <form id="decrypt-message-form" novalidate>
 
                     <div class="mb-3">
+                        <div class="my-2">
+                            <span id="decryption-reminder" class="text-muted small mb-2">
+                                You can now use the password to access the secret message.
+                                <b>Just a heads up, it’ll be gone after you read it!</b>
+                            </span>
+                        </div>
                         <label class="form-label" for="decryptPassword">
                             <h6><i class="bi bi-key-fill"></i>Password</h6>
                         </label>
@@ -164,7 +170,7 @@
                                     style="width: 100%">
                                 </div>
                             </div>
-                            <button class="btn btn-primary w-100" id="decrypt-message" type="button">
+                            <button class="btn btn-primary w-100" id="decrypt-message" type="button" disabled>
                                 <i class="bi bi-unlock"></i>
                                 Decrypt Message
                             </button>
@@ -225,26 +231,24 @@
 
         function onTurnstileSuccess(token) {
             // Enable the submit button when Turnstile is verified
-            document.getElementById('encrypt-message').removeAttribute('disabled');
+            document.querySelectorAll('.btn-primary').forEach(btn => btn.removeAttribute('disabled'));
 
             // Store the token for submission
             const turnstileDiv = document.getElementById('cf-turnstile');
             turnstileDiv.dataset.token = token;
-            turnstileDiv.classList.add('d-none');
         }
 
         // Reset Turnstile if an error occurs
         function resetTurnstile() {
             turnstile.reset();
+            document.querySelectorAll('.btn-primary').forEach(btn => btn.setAttribute('disabled', 'disabled'));
             const turnstileDiv = document.getElementById('cf-turnstile');
-            document.getElementById('encrypt-message').setAttribute('disabled', 'disabled');
-            turnstileDiv.classList.remove('d-none');
             turnstileDiv.dataset.token = '';
         }
 
-        (function() {
+        window.onloadTurnstileCallback = function () {
             resetTurnstile();
-        })();
+        };
     </script>
 
     <!-- Cloudflare Turnstile widget -->
@@ -253,6 +257,8 @@
     <script type="module" src="js/main.js"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YTSG6BQ14S"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7128181034194619"
+        crossorigin="anonymous"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
