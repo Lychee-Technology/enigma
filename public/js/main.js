@@ -182,14 +182,19 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     const passowrdInput = document.getElementById("password");
     const ttlInput = document.getElementById("ttl");
 
+    /**
+     * Encrypt message and save it to the server.
+     * @param {Event} ev 
+     */
     async function encryptMessage(ev) {
         encryptMessageForm.classList.add('was-validated')
 
         if (!encryptMessageForm.checkValidity()) {
-            e.preventDefault()
-            e.stopPropagation()
+            ev.preventDefault()
+            ev.stopPropagation()
             return
         }
+
         encryptMessageButton.classList.add('invisible')
         encryptMessageButton.classList.remove('mb-3')
         encryptMessageProgress.classList.remove('invisible')
@@ -236,6 +241,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     })
 
     encryptMessageButton.addEventListener('click', async e => {
+        hideError();
         emitEncryptMessageEvent({
             ttl: ttlInput.value,
         });
@@ -243,9 +249,12 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     });
 
     // Decrypt simulation logic (demo purpose)
-    decryptMessageButton.addEventListener('click', async () => {
+    decryptMessageButton.addEventListener('click', async (ev) => {
+        hideError();
+        ev.stopPropagation();
         const password = document.getElementById('decryptPassword').value;
         if (!password) {
+            ev.preventDefault();
             showError("Please enter a password.");
             // Optionally trigger Bootstrap validation here
             return;
@@ -253,6 +262,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
 
         const path = location.pathname;
         if (path.length <= 3) {
+            ev.preventDefault();
             showError("Invalid URL. Please check the link.");
             return;
         }
