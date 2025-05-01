@@ -5,17 +5,56 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+type ClientToken struct {
+	AuthorizationHeader string
+	IP                  string
+}
+
+func (token *ClientToken) toValues(secret string) (*url.Values, error) {
+	// Return error if token is missing
+	if token.AuthorizationHeader == "" {
+		return nil, errors.New("missing token")
+	}
+
+	// Expecting "Turnstile <token>"
+	parts := strings.SplitN(token.AuthorizationHeader, " ", 2)
+	if len(parts) != 2 || parts[0] != "Turnstile" {
+		return nil, errors.New("invalid Authorization header format")
+	}
+
+	idempotencyKey := uuid.New().String()
+	turnstileResponse := parts[1]
+
+	values := url.Values{
+		"secret":          {secret},
+		"response":        {turnstileResponse},
+		"idempotency_key": {idempotencyKey},
+	}
+
+	if token.IP == "" {
+		values.Set("remoteip", token.IP)
+	}
+
+	log.Printf("Creating Values for Turnstile verification, turnstile response: '%s...', idempotency key: '%s', remote IP: '%s'\n",
+		turnstileResponse[0:min(10, len(turnstileResponse))],
+		idempotencyKey,
+		token.IP)
+
+	return &values, nil
+}
 
 type TokenVerifier interface {
 	// VerifyToken verifies the token using the provided secret.
-	VerifyToken(context context.Context, token string) error
+	VerifyToken(context context.Context, token ClientToken) error
 }
 
 type CloudflareTurnstileVerifier struct {
@@ -25,51 +64,35 @@ type CloudflareTurnstileVerifier struct {
 type NoOpTokenVerifier struct {
 }
 
-func (verfier *NoOpTokenVerifier) VerifyToken(context context.Context, token string) error {
+func (verfier *NoOpTokenVerifier) VerifyToken(context context.Context, token ClientToken) error {
 	// No verification needed, always return nil
 	return nil
 }
 
 // verifyTurnstileToken sends the token and secret to Cloudflare Turnstile for verification.
-func (verfier *CloudflareTurnstileVerifier) VerifyToken(context context.Context, token string) error {
-	// Return error if token is missing
-	if len(token) == 0 {
-		return errors.New("missing token")
-	}
-
-	// Expecting "Bearer <token>"
-	parts := strings.SplitN(token, " ", 2)
-	if len(parts) != 2 || parts[0] != "Turnstile" {
-		return errors.New("invalid Authorization header format")
-	}
-
-	turnstileResponse := parts[1]
-	idempotencyKey := uuid.New().String()
-
-	log.Printf("Verifying token: %s... with idempotency key: %s",
-		turnstileResponse[0:min(10, len(turnstileResponse))],
-		idempotencyKey)
-
+func (verfier *CloudflareTurnstileVerifier) VerifyToken(context context.Context, token ClientToken) error {
 	// Prepare form data
-	data := url.Values{
-		"secret":          {verfier.Secret},
-		"response":        {turnstileResponse},
-		"idempotency_key": {idempotencyKey},
+	data, err := token.toValues(verfier.Secret)
+
+	if err != nil {
+		log.Printf("Failed to create values for Turnstile verification: %v", err)
+		return err
 	}
+
 	var resp *http.Response
-	var err error
 	backoffs := []time.Duration{100 * time.Millisecond, 200 * time.Millisecond}
 	for i, delay := range backoffs {
 		log.Printf("Turnstile verification attempt %d", i+1)
-		req, reqErr := http.NewRequestWithContext(
+		req, err := http.NewRequestWithContext(
 			context,
 			http.MethodPost,
 			"https://challenges.cloudflare.com/turnstile/v0/siteverify",
 			strings.NewReader(data.Encode()))
 
-		if reqErr != nil {
-			return reqErr
+		if err != nil {
+			return err
 		}
+
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		client := &http.Client{Timeout: 5 * time.Second}
 		resp, err = client.Do(req)

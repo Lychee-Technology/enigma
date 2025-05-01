@@ -83,13 +83,15 @@ func (handler *EngimaHttpHandler) handlePostMessage(responseWriter http.Response
 }
 
 func verifyToken(request *http.Request, tokenVerifier TokenVerifier) error {
-	logRemoteIp(request)
-	
-	authToken := request.Header.Get("Authorization")
-	if len(authToken) == 0 {
+	authHeader := request.Header.Get("Authorization")
+	if authHeader == "" {
 		return errors.New("missing Authorization header")
 	}
-	return tokenVerifier.VerifyToken(request.Context(), authToken)
+
+	return tokenVerifier.VerifyToken(request.Context(), ClientToken{
+		AuthorizationHeader: authHeader,
+		IP:                  request.Header.Get("CF-Connecting-IP"),
+	})
 }
 
 func (handler *EngimaHttpHandler) HandleGetMessage(responseWriter http.ResponseWriter, request *http.Request) {
@@ -98,12 +100,4 @@ func (handler *EngimaHttpHandler) HandleGetMessage(responseWriter http.ResponseW
 
 func (handler *EngimaHttpHandler) HandlePostMessage(responseWriter http.ResponseWriter, request *http.Request) {
 	handler.tokenVerificationMiddleware(handler.handlePostMessage).ServeHTTP(responseWriter, request)
-}
-
-func logRemoteIp(request *http.Request) {
-	log.Printf("Remote IP: %s\n", request.RemoteAddr)
-	headers := []string{"X-Forwarded-For", "CF-Connecting-IP", "X-Real-IP"}
-	for _, header := range headers {
-		log.Printf("%s: '%s'\n", header, request.Header.Get(header))
-	}
 }

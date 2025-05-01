@@ -24,3 +24,4 @@ node_modules/
 test/enigma-local/data/
 
 .env
+bin/
