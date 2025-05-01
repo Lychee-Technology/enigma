@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"log"
 	"net/http"
@@ -52,17 +51,10 @@ func main() {
 
 	serverMux.Handle("GET /api/v1/messages/{shortId}/{cookie}", http.HandlerFunc(handler.HandleGetMessage))
 	serverMux.Handle("POST /api/v1/messages", http.HandlerFunc(handler.HandlePostMessage))
-	serverMux.Handle("OPTIONS /api/v1/{any...}", http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		responseWriter.WriteHeader(http.StatusOK)
-	}))
 
 	server := http.Server{
 		Handler: serverMux,
 		Addr:    "127.0.0.1:18080",
-		TLSConfig: &tls.Config{
-			// Set minimum TLS version
-			MinVersion: tls.VersionTLS12,
-		},
 	}
 
 	log.Printf("Listening to %v ...\n", server.Addr)

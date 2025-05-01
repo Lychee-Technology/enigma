@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"net/url"
@@ -43,12 +44,17 @@ func (verfier *CloudflareTurnstileVerifier) VerifyToken(context context.Context,
 	}
 
 	turnstileResponse := parts[1]
-	log.Printf("Verifying token: %s...", turnstileResponse[0:min(10, len(turnstileResponse))])
+	idempotencyKey := uuid.New().String()
+
+	log.Printf("Verifying token: %s... with idempotency key: %s",
+		turnstileResponse[0:min(10, len(turnstileResponse))],
+		idempotencyKey)
 
 	// Prepare form data
 	data := url.Values{
-		"secret":   {verfier.Secret},
-		"response": {turnstileResponse},
+		"secret":          {verfier.Secret},
+		"response":        {turnstileResponse},
+		"idempotency_key": {idempotencyKey},
 	}
 	var resp *http.Response
 	var err error
