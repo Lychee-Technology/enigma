@@ -1,6 +1,39 @@
 import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
 
 (async function () {
+
+    /**
+     * 
+     * @param {string} eventName 
+     * @param {object} ev 
+     */
+    function emitEvent(eventName, ev) {
+        if (typeof gtag === 'function') {
+            try {
+                gtag('event', eventName, {
+                    ...ev,
+                    'count': 1
+                });
+            } catch (err) {
+                console.warn("Error emitting gtag event:", err);
+            }
+        } else {
+            console.warn(`gtag function is not defined. ${eventName} event not emitted.`);
+        }
+    }
+
+    function emitEncryptMessageEvent(ev) {
+        emitEvent('encrypt_message', ev);
+    }
+
+    function emitDecryptMessageEvent(ev) {
+        emitEvent('decrypt_message', ev);
+    }
+
+    function emitBackendErrorEvent(ev) {
+        emitEvent('backend_error', ev);
+    }
+
     function showShortUrl(shortId, control) {
         const l = document.location
         const url = `${l.protocol}//${l.host}/${shortId}`
@@ -27,6 +60,10 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
             }
         });
         if (!res.ok) {
+            emitBackendErrorEvent({
+                api: "getEncryptedData",
+                status: res.status
+            });
             throw ({
                 message: `Failed to fetch encrypted data. Status: ${res.statusText}`,
                 status: res.status
@@ -63,7 +100,11 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
         if (resp.ok) {
             showShortUrl((await resp.json()).shortId, document.getElementById("messageUrl"));
         } else {
-            showError(`Error: ${resp.statusText}`)
+            emitBackendErrorEvent({
+                api: "saveEncryptedData",
+                status: resp.status
+            });
+            showError(`Oops! Saving that message didn’t work. Try again later, and it should be good to go!`);
         }
     }
 
@@ -97,7 +138,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
         }, 5000);
         navigator.share({
             title: "Hey there! I’ve got an encrypted message for you, and the password is right after this. 😋",
-            url: document.getElementById("messageUrl").value 
+            url: document.getElementById("messageUrl").value
         }).catch(err => {
             console.error("Error sharing the message:", err);
         });
@@ -196,6 +237,9 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     })
 
     encryptMessageButton.addEventListener('click', async e => {
+        emitEncryptMessageEvent({
+            ttl: ttlInput.value,
+        });
         await encryptMessage(e)
     });
 
@@ -228,6 +272,8 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
             document.getElementById('decrypt-result').value = decryptedMessage;
             document.getElementById('decrypted-message-box').classList.remove('d-none');
             document.getElementById('decryption-reminder').innerHTML = `<span>ℹ️ Just a heads up, your message has been deleted. <b>DO NOT RELOAD!</b></span>`;
+
+            emitDecryptMessageEvent({});
         } catch (err) {
             console.error("Error fetching encrypted data:", err);
             if (err.status >= 400 && err.status < 500) {
