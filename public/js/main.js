@@ -3,7 +3,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
 (async function () {
 
     /**
-     * 
+     * Emit event to Google Analytics. 
      * @param {string} eventName 
      * @param {object} ev 
      */
@@ -52,7 +52,6 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
      */
     async function getEncryptedData(id, cookie, turnstileToken) {
         const url = `${apiBaseUrl()}/messages/${id}/${cookie}`;
-        console.log("getEncryptedData from: ", url);
         const res = await fetch(url, {
             cache: "no-store",
             headers: {
