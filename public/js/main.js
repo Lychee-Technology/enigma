@@ -241,11 +241,18 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     })
 
     encryptMessageButton.addEventListener('click', async e => {
+        e.preventDefault();
         hideError();
         emitEncryptMessageEvent({
             ttl: ttlInput.value,
         });
-        await encryptMessage(e)
+        try {
+            await encryptMessage(e);
+        }
+        catch (err) {
+            console.error("Error during encryption:", err);
+            showError("An error occurred while encrypting the message. Please try again.");
+        }
     });
 
     // Decrypt simulation logic (demo purpose)
@@ -271,10 +278,11 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
 
         document.getElementById('decrypt-progress').classList.remove('invisible');
         document.getElementById('decrypt-progress').classList.add('mt-3');
-        const turnstileDiv = document.getElementById('cf-turnstile');
-        const turnstileToken = turnstileDiv.dataset.token;
+
 
         try {
+            const turnstileDiv = document.getElementById('cf-turnstile');
+            const turnstileToken = turnstileDiv.dataset.token;
             const shortId = path.substring(1);
             const encryptedData = await getEncryptedData(shortId, cookie, turnstileToken);
             const decryptedMessage = await decrypt(encryptedData, password);
