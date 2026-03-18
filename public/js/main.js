@@ -274,7 +274,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
             return;
         }
 
-        const { cookie } = await passwordToCryptoParams(password, "decrypt");
+        const { cookie } = await passwordToCryptoParams(password);
 
         document.getElementById('decrypt-progress').classList.remove('invisible');
         document.getElementById('decrypt-progress').classList.add('mt-3');

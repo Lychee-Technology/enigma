@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -44,10 +44,10 @@ func (token *ClientToken) toValues(secret string) (*url.Values, error) {
 		values.Set("remoteip", token.IP)
 	}
 
-	log.Printf("Creating Values for Turnstile verification, turnstile response: '%s...', idempotency key: '%s', remote IP: '%s'\n",
-		turnstileResponse[0:min(10, len(turnstileResponse))],
-		idempotencyKey,
-		token.IP)
+	slog.Info("creating turnstile verification request",
+		"responsePrefix", turnstileResponse[0:min(10, len(turnstileResponse))],
+		"idempotencyKey", idempotencyKey,
+		"remoteIP", token.IP)
 
 	return &values, nil
 }
@@ -75,14 +75,14 @@ func (verfier *CloudflareTurnstileVerifier) VerifyToken(context context.Context,
 	data, err := token.toValues(verfier.Secret)
 
 	if err != nil {
-		log.Printf("Failed to create values for Turnstile verification: %v", err)
+		slog.Warn("failed to create turnstile values", "error", err)
 		return err
 	}
 
 	var resp *http.Response
 	backoffs := []time.Duration{100 * time.Millisecond, 200 * time.Millisecond}
 	for i, delay := range backoffs {
-		log.Printf("Turnstile verification attempt %d", i+1)
+		slog.Info("turnstile verification attempt", "attempt", i+1)
 		req, err := http.NewRequestWithContext(
 			context,
 			http.MethodPost,
@@ -99,23 +99,21 @@ func (verfier *CloudflareTurnstileVerifier) VerifyToken(context context.Context,
 		if err == nil {
 			isRetriable, err := checkVerificationResult(resp)
 			if err != nil {
-				log.Printf("Turnstile verification failed: %v", err)
-				if isRetriable {
-					log.Printf("Retrying Turnstile verification...")
-				} else {
+				slog.Warn("turnstile verification failed", "error", err, "retriable", isRetriable)
+				if !isRetriable {
 					return err
 				}
 			}
 		}
 
 		if err != nil {
-			log.Printf("Turnstile verification error: %v", err)
+			slog.Warn("turnstile verification error", "error", err)
 		} else {
-			log.Printf("Turnstile verification successful")
+			slog.Info("turnstile verification successful")
 			return nil
 		}
 		if i < len(backoffs)-1 {
-			log.Printf("Retrying in %v...", delay)
+			slog.Info("retrying turnstile verification", "delay", delay)
 			time.Sleep(delay)
 		}
 	}
@@ -146,7 +144,7 @@ func checkVerificationResult(resp *http.Response) (bool, error) {
 
 	err := json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
-		log.Printf("Failed to decode Turnstile response: %v", err)
+		slog.Warn("failed to decode turnstile response", "error", err)
 		return true, err
 	}
 
@@ -155,10 +153,10 @@ func checkVerificationResult(resp *http.Response) (bool, error) {
 	}
 
 	if len(result.ErrorCodes) == 1 && (result.ErrorCodes[0] == "internal-error" || result.ErrorCodes[0] == "timeout-or-duplicate") {
-		log.Printf("Turnstile internal error, retrying...")
+		slog.Warn("turnstile internal error, will retry", "errorCodes", result.ErrorCodes)
 		return true, fmt.Errorf("retriable turnstile verification error, error codes: %v", result.ErrorCodes)
 	} else {
-		log.Printf("Turnstile verification failed: %v", result.ErrorCodes)
+		slog.Warn("turnstile verification failed", "errorCodes", result.ErrorCodes)
 		return false, fmt.Errorf("turnstile verification failed, error codes: %v", result.ErrorCodes)
 	}
 }

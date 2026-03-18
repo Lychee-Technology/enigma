@@ -8,7 +8,7 @@ import (
 	"github.com/oracle/nosql-go-sdk/nosqldb"
 )
 
-func clearTable(conn *OracleNoSqlEngimaDataSource) {
+func clearTable(conn *OracleNoSqlEnigmaDataSource) {
 	// Delete all rows in the Engima table before each test
 
 	deleteResult, err := conn.client.Query(&nosqldb.QueryRequest{
@@ -32,7 +32,7 @@ func TestDatabaseConnection(t *testing.T) {
 	}
 
 	// Implement your test logic here
-	conn, err := NewOracleNoSqlEngimaDataSource()
+	conn, err := NewOracleNoSqlEnigmaDataSource()
 	if err != nil {
 		t.Fatalf("Failed to create database connection: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestDatabaseQuery(t *testing.T) {
 	}
 
 	// Implement your test logic here
-	conn, err := NewOracleNoSqlEngimaDataSource()
+	conn, err := NewOracleNoSqlEnigmaDataSource()
 	if err != nil {
 		t.Fatalf("Failed to create database connection: %v", err)
 	}

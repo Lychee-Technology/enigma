@@ -4,7 +4,7 @@ import { webcrypto } from 'node:crypto';
 import { TextEncoder, TextDecoder } from 'util';
 import { CompressionStream, DecompressionStream } from 'stream/web';
 import { Blob, Buffer } from 'node:buffer';
-import { mockFetchBase64DataUrl } from './mockFetch.mjs'; 
+import { mockFetchBase64DataUrl } from './mockFetch.mjs';
 
 import {
     bytesToBase64DataUrl,
@@ -13,18 +13,12 @@ import {
     passwordToCryptoParams,
     encrypt,
     decrypt,
-    createIv,
-    createCookie,
     compress,
     decompress,
 } from '../public/js/cryptoutil.mjs';
 
 const BIN_MIME = "application/octet-stream";
 const DATA_URL_PREFIX = `data:${BIN_MIME};base64,`;
-
-// Import the functions to test
-// In a real environment, you would import from the actual file
-// For this test, we'll mock the functions based on the provided code
 
 describe('Cryptoutil', () => {
     beforeAll(() => {
@@ -96,59 +90,24 @@ describe('Cryptoutil', () => {
         });
     });
 
-    describe('passwordToEncryptParams', () => {
-        it('should create key, IV and cookie from password', async () => {
-            const password = "testPassword";
-            const usage = "encrypt";
-
-            const mockKey = { type: 'secret', algorithm: 'AES-GCM' };
-
-            const importKeyOriginal = crypto.subtle.importKey;
-            const mockImportKey = jest.fn().mockResolvedValue(mockKey);
-            crypto.subtle.importKey = mockImportKey;
-            const result = await passwordToCryptoParams(password, usage);
-            crypto.subtle.importKey = importKeyOriginal;
-
-            expect(result).toEqual({
-                key: mockKey,
-                iv: expect.any(Object),
-                cookie: expect.any(String)
-            });
-
-            expect(mockImportKey).toHaveBeenCalledWith(
-                "raw",
-                expect.any(Object),
-                "AES-GCM",
-                false,
-                [usage]
-            );
+    describe('passwordToCryptoParams', () => {
+        it('should return a cookie derived from the password', async () => {
+            const result = await passwordToCryptoParams("testPassword");
+            expect(result).toHaveProperty('cookie');
+            expect(typeof result.cookie).toBe('string');
+            expect(result.cookie.length).toBe(8); // 4 bytes = 8 hex chars
         });
-    });
 
-    describe('createCookie', () => {
-        it('should create a cookie (retrieval token) from password hash', () => {
-            const passwordHash = new Uint8Array(64);
-            passwordHash[0] = 10; // offset will be 10 % 52 = 10
-
-            for (let i = 1; i < 64; i++) {
-                passwordHash[i] = i;
-            }
-
-            const result = createCookie(passwordHash);
-
-            expect(result).toEqual('0a0b0c0d');
+        it('should return the same cookie for the same password', async () => {
+            const r1 = await passwordToCryptoParams("same-password");
+            const r2 = await passwordToCryptoParams("same-password");
+            expect(r1.cookie).toBe(r2.cookie);
         });
-    });
 
-    describe('createIv', () => {
-        it('should create an IV from password hash', () => {
-            const passwordHash = new Uint8Array(64);
-            passwordHash[63] = 10; // offset will be 10 % 52 = 10
-            for (let i = 0; i < 63; i++) {
-                passwordHash[i] = i;
-            }
-            const result = createIv(passwordHash);
-            expect(result).toEqual(passwordHash.slice(10, 22));
+        it('should return different cookies for different passwords', async () => {
+            const r1 = await passwordToCryptoParams("password-A");
+            const r2 = await passwordToCryptoParams("password-B");
+            expect(r1.cookie).not.toBe(r2.cookie);
         });
     });
 
@@ -167,43 +126,8 @@ describe('Cryptoutil', () => {
     });
 });
 
-
-
-// The functions under test are assumed to be in the global scope (loaded via a script tag or similar)
-// If you are using modules, adjust the imports accordingly.
-
 describe("cryptoutil functions", () => {
-    test("createCookie returns correct slice from ArrayBuffer", () => {
-        // Create a sample Uint8Array of 60 bytes: values 0 .. 59.
-        const sample = new Uint8Array(60);
-        for (let i = 0; i < 60; i++) {
-            sample[i] = i;
-        }
-        const offset = sample[0] % 52;
-        const expected = Array.from(new Uint8Array(sample.slice(offset, offset + 4)))
-            .map((byte) => byte.toString(16).padStart(2, '0'))
-            .join('');
-
-        const token = createCookie(sample);
-        // Compare the returned Uint8Array with expected slice.
-        expect(token).toEqual(expected);
-    });
-
-    test("createIv returns correct slice from ArrayBuffer", () => {
-        // Create a sample Uint8Array of 70 bytes.
-        const sample = new Uint8Array(70);
-        for (let i = 0; i < 70; i++) {
-            sample[i] = i;
-        }
-        const offset = sample[sample.byteLength - 1] % 52;
-        const expected = sample.slice(offset, offset + 12);
-
-        const iv = createIv(sample);
-        expect(new Uint8Array(iv)).toEqual(expected);
-    });
-
     test("compress and decompress roundtrip", async () => {
-        // Only run this test if CompressionStream and DecompressionStream are available.
         if (
             typeof CompressionStream === "function" &&
             typeof DecompressionStream === "function"
@@ -213,25 +137,62 @@ describe("cryptoutil functions", () => {
             const decompressed = await decompress(compressed);
             expect(decompressed).toBe(original);
         } else {
-            // Skip test if compression APIs are not available.
             expect(true).toBe(true);
         }
     });
 
     test("encrypt and decrypt roundtrip", async () => {
-        // Using a simple password and message. This test relies on all crypto APIs and compression APIs.
-        // It also depends on the passwordToKeyAndIV function (referenced from encrypt/decrypt).
-        // Make sure that the functions encrypt() and decrypt() are loaded into the global scope.
         const message = "Hello, world!";
         const password = "correcthorsebatterystaple";
 
-        // Encrypt the message.
         const encryptedResult = await encrypt(message, password);
         expect(encryptedResult).toHaveProperty("encrypted");
         expect(encryptedResult.encrypted.length).toBeGreaterThan(0);
 
-        // Decrypt the message.
         const decryptedMessage = await decrypt(encryptedResult.encrypted, password);
         expect(decryptedMessage).toBe(message);
+    });
+
+    test("encrypt produces different ciphertext each time (random IV+salt)", async () => {
+        const message = "same message";
+        const password = "same password";
+
+        const r1 = await encrypt(message, password);
+        const r2 = await encrypt(message, password);
+        expect(r1.encrypted).not.toBe(r2.encrypted);
+    });
+
+    // Issue #19: error path tests
+    describe("error cases", () => {
+        test("decrypt with wrong password should throw", async () => {
+            const { encrypted } = await encrypt("secret message", "correct-password");
+            await expect(decrypt(encrypted, "wrong-password")).rejects.toThrow();
+        });
+
+        test("decrypt tampered ciphertext should throw", async () => {
+            const { encrypted } = await encrypt("secret message", "password");
+            // Corrupt the last 4 bytes of the base64-decoded ciphertext
+            const combined = new Uint8Array(await base64Decode(encrypted));
+            combined[combined.length - 1] ^= 0xff;
+            combined[combined.length - 2] ^= 0xff;
+            const tampered = await base64Encode(combined);
+            await expect(decrypt(tampered, "password")).rejects.toThrow();
+        });
+
+        test("decrypt empty string should throw", async () => {
+            await expect(decrypt("", "password")).rejects.toThrow();
+        });
+
+        test("encrypt empty message should succeed", async () => {
+            const result = await encrypt("", "password");
+            expect(result).toHaveProperty("encrypted");
+            const decrypted = await decrypt(result.encrypted, "password");
+            expect(decrypted).toBe("");
+        });
+
+        test("decompress non-gzip data should throw", async () => {
+            const notGzip = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
+            await expect(decompress(notGzip)).rejects.toThrow();
+        });
     });
 });

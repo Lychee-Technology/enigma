@@ -3,7 +3,7 @@ package internal
 import (
 	"crypto/sha256"
 	"errors"
-	"log"
+	"log/slog"
 	"math/big"
 	"strings"
 	"time"
@@ -12,29 +12,28 @@ import (
 var ErrContentTooLarge = errors.New("content too large")
 
 type EnigmaMessageRepository struct {
-	DataSource EngimaDataSource
+	DataSource EnigmaDataSource
 }
 
 func (repository *EnigmaMessageRepository) SaveMessage(request *SaveMessageRequest) (*SaveMessageResponse, error) {
-	if len(request.EncryptedData) > 2000 {
+	if len(request.EncryptedData) > MaxEncryptedDataLen {
 		return nil, ErrContentTooLarge
 	}
 
-	log.Printf("%s", request.EncryptedData)
 	hash := sha256.Sum256([]byte(request.EncryptedData))
 	var i big.Int
 
 	base62Hash := i.SetBytes(hash[:]).Text(62)
 
-	engimaRecord := &EnigmaRecord{
-		SKey:        base62Hash[0:3],
+	enigmaRecord := &EnigmaRecord{
+		SKey:        base62Hash[0:ShardKeyLen],
 		Content:     request.EncryptedData,
 		ContentHash: base62Hash,
 		Cookie:      request.Cookie,
 		ExpiresAt:   time.Now().Unix() + request.TtlHours*3600,
 	}
 
-	shortId, err := repository.save(engimaRecord, request.TtlHours)
+	shortId, err := repository.save(enigmaRecord, request.TtlHours)
 
 	if err != nil {
 		return nil, err
@@ -50,27 +49,16 @@ func (repository *EnigmaMessageRepository) GetEnigmaRecord(shortId string) (*Eni
 }
 
 func (repository *EnigmaMessageRepository) save(record *EnigmaRecord, ttlHours int64) (string, error) {
-	skey := record.ContentHash[0:3]
-	log.Printf("save, SKey: %v, content hash: %v\n", skey, record.ContentHash)
+	skey := record.ContentHash[0:ShardKeyLen]
+	slog.Info("save", "skey", skey, "contentHash", record.ContentHash)
 	records, err := repository.DataSource.GetDataByShardKey(skey)
-
-	log.Printf("save, found %v records with same SKey: %v\n", len(records), skey)
-
-	for i := 0; i < len(records); i++ {
-		r := records[i]
-		log.Printf("save, Existed record, SKey: %v, content hash: %v\n", r.SKey, r.ContentHash)
-
-		if r.ContentHash == record.ContentHash {
-			return r.ShortId, nil
-		}
-	}
 
 	var longestShortId string = skey
 	if err != nil {
-		log.Printf("get data by shard key (%v) failed, error: %v\n", skey, err)
+		slog.Error("get data by shard key failed", "skey", skey, "error", err)
 	} else {
-		for i := 0; i < len(records); i++ {
-			r := records[i]
+		slog.Info("shard key lookup", "skey", skey, "count", len(records))
+		for _, r := range records {
 			if r.ContentHash == record.ContentHash {
 				return r.ShortId, nil
 			}
@@ -80,11 +68,14 @@ func (repository *EnigmaMessageRepository) save(record *EnigmaRecord, ttlHours i
 		}
 	}
 
-	for i := len(longestShortId); i < 18; i++ {
+	for i := len(longestShortId); i < MaxShortIdLen; i++ {
 		record.ShortId = record.ContentHash[0:i]
 		shortId, err := repository.DataSource.Save(record, ttlHours)
 		if errors.Is(err, ErrDuplicatedShortId) {
 			continue
+		}
+		if err != nil {
+			return "", err
 		}
 		return shortId, nil
 	}
@@ -92,14 +83,14 @@ func (repository *EnigmaMessageRepository) save(record *EnigmaRecord, ttlHours i
 }
 
 func (repository *EnigmaMessageRepository) DeleteEnigmaRecord(shortId string, cookie string) (*EnigmaRecord, error) {
-	return repository.DataSource.DeleteData(shortId[0:3], shortId, cookie)
+	return repository.DataSource.DeleteData(shortId[0:ShardKeyLen], shortId, cookie)
 }
 
 func (repository *EnigmaMessageRepository) Close() error {
-	log.Printf("Closing EnigmaMessageRepository.")
+	slog.Info("closing EnigmaMessageRepository")
 	err := repository.DataSource.Close()
 	if err != nil {
-		log.Printf("Close EnigmaService, error: %v.\n", err)
+		slog.Error("close EnigmaMessageRepository failed", "error", err)
 	}
 	return err
 }

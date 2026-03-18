@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -18,7 +18,7 @@ const TableName = "Enigma"
 var ErrDuplicatedShortId = errors.New("duplicated short id")
 
 // DataSource defines the operations for storing and retrieving Enigma records.
-type EngimaDataSource interface {
+type EnigmaDataSource interface {
 	// Save inserts a new record with an optional TTL (in hours).
 	// Returns the generated ShortId or ErrDuplicatedShortId if it already exists.
 	Save(record *EnigmaRecord, ttlHours int64) (string, error)
@@ -35,7 +35,7 @@ type EngimaDataSource interface {
 	Close() error
 }
 
-type OracleNoSqlEngimaDataSource struct {
+type OracleNoSqlEnigmaDataSource struct {
 	client *nosqldb.Client
 }
 
@@ -52,8 +52,7 @@ func createNoSqlDbConfig() (*nosqldb.Config, error) {
 	provider, err := iam.NewSignatureProviderFromFile(configFile, "", "", "")
 
 	if err != nil {
-		log.Fatalf("failed to create IAM signature provider: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create IAM signature provider: %w", err)
 	}
 
 	return &nosqldb.Config{
@@ -63,23 +62,21 @@ func createNoSqlDbConfig() (*nosqldb.Config, error) {
 	}, nil
 }
 
-func NewOracleNoSqlEngimaDataSource() (*OracleNoSqlEngimaDataSource, error) {
+func NewOracleNoSqlEnigmaDataSource() (*OracleNoSqlEnigmaDataSource, error) {
 	// Create an IAM authentication provider for Oracle NoSQL Cloud Service
 	cfg, err := createNoSqlDbConfig()
 	if err != nil {
-		log.Fatalf("failed to create NoSQL config: %v\n", err)
 		return nil, err
 	}
 	client, err := nosqldb.NewClient(*cfg)
 	if err != nil {
-		log.Fatalf("failed to create a NoSQL client: %v\n", err)
 		return nil, err
 	}
-	log.Println("NoSQL client created.")
-	return &OracleNoSqlEngimaDataSource{client: client}, nil
+	slog.Info("NoSQL client created")
+	return &OracleNoSqlEnigmaDataSource{client: client}, nil
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) DeleteData(skey string, shortId string, cookie string) (*EnigmaRecord, error) {
+func (dataSource *OracleNoSqlEnigmaDataSource) DeleteData(skey string, shortId string, cookie string) (*EnigmaRecord, error) {
 	records, err := dataSource.query(
 		"DECLARE $skey STRING; $shortId STRING; $cookie STRING; $now LONG; "+
 			"SELECT SKey, Content, ContentHash, ShortId, Cookie "+
@@ -92,7 +89,7 @@ func (dataSource *OracleNoSqlEngimaDataSource) DeleteData(skey string, shortId s
 
 	count := len(records)
 
-	log.Printf("[INFO] ShortId: %v, records count: %v", shortId, count)
+	slog.Info("delete lookup", "shortId", shortId, "count", count)
 
 	if count == 0 {
 		return nil, fmt.Errorf("ShortId (%s) not found", shortId)
@@ -106,27 +103,27 @@ func (dataSource *OracleNoSqlEngimaDataSource) DeleteData(skey string, shortId s
 		})})
 
 	if err != nil {
-		log.Printf("[WARN] failed to Delete: %v\n", err)
+		slog.Warn("delete failed", "error", err)
 	}
 
 	if !deleteResult.Success {
-		log.Printf("[WARN] failed to Delete: %v\n", deleteResult)
+		slog.Warn("delete returned failure", "result", deleteResult)
 	}
 
 	return records[0], nil
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) AsEngimaDataSource() EngimaDataSource {
+func (dataSource *OracleNoSqlEnigmaDataSource) AsEnigmaDataSource() EnigmaDataSource {
 	return dataSource
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) Close() error {
-	log.Println("Closing NoSQL client.")
+func (dataSource *OracleNoSqlEnigmaDataSource) Close() error {
+	slog.Info("closing NoSQL client")
 	return dataSource.client.Close()
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) Save(record *EnigmaRecord, ttlHours int64) (string, error) {
-	if len(record.ContentHash) < 3 {
+func (dataSource *OracleNoSqlEnigmaDataSource) Save(record *EnigmaRecord, ttlHours int64) (string, error) {
+	if len(record.ContentHash) < ShardKeyLen {
 		return "", fmt.Errorf("invalid content hash: %v", record.ContentHash)
 	}
 
@@ -142,8 +139,8 @@ func (dataSource *OracleNoSqlEngimaDataSource) Save(record *EnigmaRecord, ttlHou
 	var ttl *types.TimeToLive = nil
 
 	if ttlHours > 0 {
-		if ttlHours > 168 {
-			ttlHours = 168
+		if ttlHours > MaxTtlHours {
+			ttlHours = MaxTtlHours
 		}
 
 		ttl = &types.TimeToLive{
@@ -161,20 +158,20 @@ func (dataSource *OracleNoSqlEngimaDataSource) Save(record *EnigmaRecord, ttlHou
 
 	result, err := dataSource.client.Put(request)
 	if err != nil {
-		log.Fatalf("Failed to put data, %v", err)
+		slog.Error("failed to put data", "error", err)
 		return "", err
 	}
 
 	if result.Success() {
-		log.Printf("Save short id (%v) success\n", record.ShortId)
+		slog.Info("save success", "shortId", record.ShortId)
 		return record.ShortId, nil
 	}
-	log.Printf("Save short id (%v) failed\n", record.ShortId)
+	slog.Info("save failed (duplicate)", "shortId", record.ShortId)
 	return "", ErrDuplicatedShortId
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) query(sql string, skey string, params map[string]interface{}) ([]*EnigmaRecord, error) {
-	if len(skey) != 3 {
+func (dataSource *OracleNoSqlEnigmaDataSource) query(sql string, skey string, params map[string]interface{}) ([]*EnigmaRecord, error) {
+	if len(skey) != ShardKeyLen {
 		return []*EnigmaRecord{}, fmt.Errorf("invalid shard key: %v", skey)
 	}
 
@@ -184,7 +181,7 @@ func (dataSource *OracleNoSqlEngimaDataSource) query(sql string, skey string, pa
 	prepareResult, err := dataSource.client.Prepare(request)
 
 	if err != nil {
-		log.Printf("[ERROR] failed to Prepare: %v\n", err)
+		slog.Error("failed to prepare query", "error", err)
 		return []*EnigmaRecord{}, err
 	}
 
@@ -199,14 +196,14 @@ func (dataSource *OracleNoSqlEngimaDataSource) query(sql string, skey string, pa
 	})
 
 	if err != nil {
-		log.Printf("[ERROR] failed to Query: %v\n", err)
+		slog.Error("failed to execute query", "error", err)
 		return []*EnigmaRecord{}, err
 	}
 
 	values, err := resp.GetResults()
 
 	if err != nil {
-		log.Printf("[ERROR] failed to GetResults: %v\n", err)
+		slog.Error("failed to get results", "error", err)
 		return []*EnigmaRecord{}, err
 	}
 
@@ -219,7 +216,7 @@ func (dataSource *OracleNoSqlEngimaDataSource) query(sql string, skey string, pa
 	return result, nil
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) GetDataByShardKey(skey string) ([]*EnigmaRecord, error) {
+func (dataSource *OracleNoSqlEnigmaDataSource) GetDataByShardKey(skey string) ([]*EnigmaRecord, error) {
 	return dataSource.query(
 		"DECLARE $skey STRING; "+
 			"SELECT SKey, Content, ContentHash, ShortId, Cookie "+
@@ -228,13 +225,13 @@ func (dataSource *OracleNoSqlEngimaDataSource) GetDataByShardKey(skey string) ([
 		skey, map[string]interface{}{})
 }
 
-func (dataSource *OracleNoSqlEngimaDataSource) GetDataByShortId(shortId string) (*EnigmaRecord, error) {
+func (dataSource *OracleNoSqlEnigmaDataSource) GetDataByShortId(shortId string) (*EnigmaRecord, error) {
 	records, err := dataSource.query(
 		"DECLARE $skey STRING; $shortId STRING; "+
 			"SELECT SKey, Content, ContentHash, ShortId, Cookie "+
 			"FROM Enigma WHERE SKey = $skey AND ShortId = $shortId "+
 			"ORDER BY ShortId",
-		shortId[0:3], map[string]interface{}{"$shortId": shortId})
+		shortId[0:ShardKeyLen], map[string]interface{}{"$shortId": shortId})
 
 	if err != nil {
 		return nil, err
@@ -242,7 +239,7 @@ func (dataSource *OracleNoSqlEngimaDataSource) GetDataByShortId(shortId string) 
 
 	count := len(records)
 
-	log.Printf("[INFO] ShortId: %v, records count: %v", shortId, count)
+	slog.Info("get by short id", "shortId", shortId, "count", count)
 
 	if count == 0 {
 		return nil, fmt.Errorf("ShortId (%s) not found", shortId)

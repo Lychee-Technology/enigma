@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(gh label:*)",
+      "Bash(gh issue:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(npm test:*)"
+    ]
+  }
+}
