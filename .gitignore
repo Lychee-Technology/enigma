@@ -25,3 +25,4 @@ test/enigma-local/data/
 
 .env
 bin/
+.claude/
