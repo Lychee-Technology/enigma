@@ -18,8 +18,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o enigma ./cmd/main
 # Stage 2: Final image with Nginx and the Go binary
 FROM alpine:latest
 
-# Install nginx and su-exec (for privilege drop)
-RUN apk add --no-cache nginx su-exec
+# Install nginx, su-exec (privilege drop), and openssl (self-signed cert generation)
+RUN apk add --no-cache nginx su-exec openssl
 
 # Create run directory for nginx
 RUN mkdir -p /run/nginx
@@ -27,8 +27,9 @@ RUN mkdir -p /run/nginx
 # Create a non-root user for the Go application
 RUN addgroup -S enigmagroup && adduser -S -G enigmagroup enigmauser
 
-# Create cert directory — certificates must be mounted at runtime
-# (do NOT copy test/*.pem here; use: -v /path/to/certs:/usr/share/nginx/cert:ro)
+# Create cert directory — entrypoint generates a self-signed cert here if none is present.
+# To use real certificates, mount them at runtime:
+#   -v /path/to/certs:/usr/share/nginx/cert:ro
 RUN mkdir -p /usr/share/nginx/cert
 
 WORKDIR /app
