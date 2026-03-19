@@ -150,3 +150,17 @@ body {
     border: none;
     min-height: 300px;
 }
+.logo {
+    width: 50px;
+}
+#encrypt-message-progress,
+#decrypt-progress {
+    height: 5px;
+}
+#encrypt-message-progress .progress-bar,
+#decrypt-progress .progress-bar {
+    width: 100%;
+}
+.heart {
+    color: red;
+}

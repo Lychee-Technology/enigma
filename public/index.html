@@ -15,7 +15,7 @@
     <div class="main-content-wrapper">
         <a href="/" class="text-decoration-none">
             <div class="app-header d-flex align-items-center justify-content-center">
-                <img src="apple-touch-icon.png" class="logo" style="width: 50px;">
+                <img src="apple-touch-icon.png" class="logo">
                 <h1 class="text-center">Enigma</h1>
             </div>
         </a>
@@ -81,10 +81,8 @@
                     <div class="row mb-3 justify-content-center">
                         <div class="col-md-8">
                             <div class="progress invisible mb-2" role="progressbar" id="encrypt-message-progress"
-                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"
-                                style="height: 5px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                    style="width: 100%">
+                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated">
                                 </div>
                             </div>
                             <button class="btn btn-primary w-100" id="encrypt-message" name="encrypt-message" disabled
@@ -162,10 +160,8 @@
                     <div class="row mb-3 justify-content-center">
                         <div class="col-md-8">
                             <div class="progress invisible mb-2" role="progressbar" id="decrypt-progress"
-                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"
-                                style="height: 5px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                    style="width: 100%">
+                                aria-label="Processing..." aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated">
                                 </div>
                             </div>
                             <button class="btn btn-primary w-100" id="decrypt-message" type="button" disabled>
@@ -200,7 +196,7 @@
             data-callback="onTurnstileSuccess" error-callback="resetTurnstile"></div>
 
         <div class="app-footer">
-            Made with <span style="color: red;">💖︎</span> by <a href="https://www.lychee.technology"
+            Made with <span class="heart">💖︎</span> by <a href="https://www.lychee.technology"
                 class="text-decoration-none">Lychee Technology Inc.</a>
         </div>
     </div> <!-- End main-content-wrapper -->
