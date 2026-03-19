@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
 type EnigmaHttpHandler struct {
@@ -32,22 +31,17 @@ func (handler *EnigmaHttpHandler) tokenVerificationMiddleware(next http.HandlerF
 	}
 }
 
+// handleGetMessage handles DELETE /api/v1/messages/{shortId}/{cookie}.
+// Consuming (deleting) the message is an intentional side-effect of reading it.
 func (handler *EnigmaHttpHandler) handleGetMessage(responseWriter http.ResponseWriter, request *http.Request) {
-	path := request.URL.Path
-	const prefix = "/api/v1/messages/"
-	if !strings.HasPrefix(path, prefix) {
-		http.NotFound(responseWriter, request)
-		return
-	}
-	parts := strings.Split(strings.TrimPrefix(path, prefix), "/")
-	if len(parts) < 2 {
+	shortId := request.PathValue("shortId")
+	cookie := request.PathValue("cookie")
+
+	if shortId == "" || cookie == "" {
 		writeErrorJSON(responseWriter, "invalid path, expecting /api/v1/messages/{shortId}/{cookie}", http.StatusBadRequest)
 		return
 	}
-	shortId := parts[0]
-	cookie := parts[1]
 
-	// Validate shortId length
 	if len(shortId) < ShardKeyLen {
 		writeErrorJSON(responseWriter, "shortId must be at least 3 letters", http.StatusBadRequest)
 		return

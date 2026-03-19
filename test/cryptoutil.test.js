@@ -4,7 +4,6 @@ import { webcrypto } from 'node:crypto';
 import { TextEncoder, TextDecoder } from 'util';
 import { CompressionStream, DecompressionStream } from 'stream/web';
 import { Blob, Buffer } from 'node:buffer';
-import { mockFetchBase64DataUrl } from './mockFetch.mjs';
 
 import {
     bytesToBase64DataUrl,
@@ -32,11 +31,9 @@ describe('Cryptoutil', () => {
             CompressionStream,
             DecompressionStream,
             Blob,
-            FileReader,
-            fetch: mockFetchBase64DataUrl,
         });
 
-        // Mock FileReader implementation for testing purposes.
+        // Mock FileReader for base64Encode (bytesToBase64DataUrl still uses FileReader).
         class MockFileReader {
             constructor() {
                 this.onload = null;
@@ -50,13 +47,18 @@ describe('Cryptoutil', () => {
                     if (this.onload) {
                         this.onload({ target: this });
                     }
-                }
-                ).catch((error) => {
+                }).catch((error) => {
                     if (this.onerror) {
                         this.onerror(error);
                     }
                 });
             }
+        }
+
+        // Node.js 18+ has atob/btoa built-in; ensure they're available.
+        if (typeof globalThis.atob === 'undefined') {
+            globalThis.atob = (b64) => Buffer.from(b64, 'base64').toString('binary');
+            globalThis.btoa = (bin) => Buffer.from(bin, 'binary').toString('base64');
         }
 
         global.FileReader = MockFileReader;
@@ -83,10 +85,16 @@ describe('Cryptoutil', () => {
     });
 
     describe('base64Decode', () => {
-        it('should decode base64 string to arraybuffer', async () => {
-            const base64 = "YWJj";
-            const result = await base64Decode(base64);
+        it('should decode base64 string to ArrayBuffer', () => {
+            const result = base64Decode("YWJj");
             expect(new TextDecoder().decode(result)).toBe('abc');
+        });
+
+        it('should round-trip with base64Encode', async () => {
+            const original = new TextEncoder().encode("hello world");
+            const encoded = await base64Encode(original);
+            const decoded = base64Decode(encoded);
+            expect(Array.from(new Uint8Array(decoded))).toEqual(Array.from(original));
         });
     });
 
@@ -171,8 +179,7 @@ describe("cryptoutil functions", () => {
 
         test("decrypt tampered ciphertext should throw", async () => {
             const { encrypted } = await encrypt("secret message", "password");
-            // Corrupt the last 4 bytes of the base64-decoded ciphertext
-            const combined = new Uint8Array(await base64Decode(encrypted));
+            const combined = new Uint8Array(base64Decode(encrypted));
             combined[combined.length - 1] ^= 0xff;
             combined[combined.length - 2] ^= 0xff;
             const tampered = await base64Encode(combined);

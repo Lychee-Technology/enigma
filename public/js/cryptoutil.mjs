@@ -1,5 +1,4 @@
 const BIN_MIME = "application/octet-stream";
-const DATA_URL_PREFIX = `data:${BIN_MIME};base64,`;
 
 /**
  * Encode an ArrayBuffer to Data Url
@@ -27,18 +26,18 @@ async function base64Encode(bytes) {
 }
 
 /**
- * Decode base64 string to an array buffer.
+ * Decode a base64 string to an ArrayBuffer.
  * @param {string} base64
- * @returns {Promise<ArrayBuffer>} array buffer decoded from the base64
+ * @returns {ArrayBuffer}
  */
-async function base64Decode(base64) {
-    const res = await fetch(`${DATA_URL_PREFIX}${base64}`);
-
-    if (!res.ok) {
-        throw new Error(`Failed to decode base64`);
+function base64Decode(base64) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
     }
-    const data = await res.arrayBuffer();
-    return data;
+    return bytes.buffer;
 }
 
 /**
@@ -153,7 +152,7 @@ async function encrypt(message, password) {
  * @returns {Promise<string>} decrypted plaintext
  */
 async function decrypt(encryptedBase64, password) {
-    const combined = new Uint8Array(await base64Decode(encryptedBase64));
+    const combined = new Uint8Array(base64Decode(encryptedBase64));
     const salt = combined.slice(0, 16);
     const iv = combined.slice(16, 28);
     const ciphertext = combined.slice(28);

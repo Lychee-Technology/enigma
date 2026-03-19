@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"lychee.technology/enigma/internal"
 )
 
@@ -36,8 +37,13 @@ func main() {
 		return
 	}
 
-	tokenVerifier = &internal.CloudflareTurnstileVerifier{
-		Secret: os.Getenv("ENIGMA_TURNSTILE_SECRET"),
+	if stage == "dev" {
+		slog.Warn("running in dev mode — Turnstile verification is disabled")
+		tokenVerifier = &internal.NoOpTokenVerifier{}
+	} else {
+		tokenVerifier = &internal.CloudflareTurnstileVerifier{
+			Secret: os.Getenv("ENIGMA_TURNSTILE_SECRET"),
+		}
 	}
 
 	repository := &internal.EnigmaMessageRepository{
@@ -55,16 +61,32 @@ func main() {
 
 	serverMux := http.NewServeMux()
 
-	serverMux.Handle("GET /api/v1/messages/{shortId}/{cookie}", http.HandlerFunc(handler.HandleGetMessage))
+	serverMux.Handle("DELETE /api/v1/messages/{shortId}/{cookie}", http.HandlerFunc(handler.HandleGetMessage))
 	serverMux.Handle("POST /api/v1/messages", http.HandlerFunc(handler.HandlePostMessage))
 	serverMux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	// Wrap all routes with request ID middleware.
+	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqID := r.Header.Get("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		w.Header().Set("X-Request-ID", reqID)
+		slog.Info("request", "method", r.Method, "path", r.URL.Path, "requestId", reqID)
+		serverMux.ServeHTTP(w, r)
+	})
+
+	addr := os.Getenv("ENIGMA_LISTEN_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:18080"
+	}
+
 	server := http.Server{
-		Handler: serverMux,
-		Addr:    "127.0.0.1:18080",
+		Handler: rootHandler,
+		Addr:    addr,
 	}
 
 	slog.Info("listening", "addr", server.Addr)

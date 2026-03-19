@@ -53,6 +53,7 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
     async function getEncryptedData(id, cookie, turnstileToken) {
         const url = `${apiBaseUrl()}/messages/${id}/${cookie}`;
         const res = await fetch(url, {
+            method: "DELETE",
             cache: "no-store",
             headers: {
                 "Authorization": `Turnstile ${turnstileToken}`
@@ -78,11 +79,6 @@ import { encrypt, decrypt, passwordToCryptoParams } from "./cryptoutil.mjs";
      * @param {number} ttl
      */
     async function saveMessage(encryptedData, cookie, ttlHours, turnstileToken) {
-        if (!message || message.length == 0) {
-            showError("Message is empty.")
-            return;
-        }
-
         const resp = await fetch(`${apiBaseUrl()}/messages`, {
             method: "POST",
             body: JSON.stringify({

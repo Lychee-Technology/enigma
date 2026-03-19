@@ -13,7 +13,6 @@ import (
 	"lychee.technology/enigma/internal"
 )
 
-
 type handlerFixture struct {
 	ds      *mockDataSource
 	handler *internal.EnigmaHttpHandler
@@ -32,8 +31,6 @@ func newFixture() *handlerFixture {
 func newFixtureWithBadVerifier() *handlerFixture {
 	mds := &mockDataSource{records: make([]*EnigmaRecord, 0)}
 	repo := &EnigmaMessageRepository{DataSource: mds}
-
-	// Inline bad verifier via mockDataSource abuse — use a separate type
 	h := &internal.EnigmaHttpHandler{
 		Repository:    repo,
 		TokenVerifier: &badVerifier{},
@@ -145,11 +142,13 @@ func TestHandlePostMessage_Success(t *testing.T) {
 	}
 }
 
-// --- handleGetMessage tests ---
+// --- handleGetMessage tests (now DELETE) ---
 
 func TestHandleGetMessage_MissingAuth(t *testing.T) {
 	f := newFixtureWithBadVerifier()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/messages/abc/cookie", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/messages/abc/cookie", nil)
+	req.SetPathValue("shortId", "abc")
+	req.SetPathValue("cookie", "cookie")
 	req.Header.Set("Authorization", "Turnstile bad-token")
 	rr := httptest.NewRecorder()
 
@@ -162,7 +161,9 @@ func TestHandleGetMessage_MissingAuth(t *testing.T) {
 
 func TestHandleGetMessage_ShortIdTooShort(t *testing.T) {
 	f := newFixture()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/messages/ab/ck", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/messages/ab/ck", nil)
+	req.SetPathValue("shortId", "ab")
+	req.SetPathValue("cookie", "ck")
 	req.Header.Set("Authorization", "Turnstile token")
 	rr := httptest.NewRecorder()
 
@@ -173,10 +174,10 @@ func TestHandleGetMessage_ShortIdTooShort(t *testing.T) {
 	}
 }
 
-func TestHandleGetMessage_MalformedPath(t *testing.T) {
+func TestHandleGetMessage_MissingPathValues(t *testing.T) {
 	f := newFixture()
-	// Missing cookie segment
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/messages/abc", nil)
+	// No SetPathValue — simulates missing route params
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/messages/", nil)
 	req.Header.Set("Authorization", "Turnstile token")
 	rr := httptest.NewRecorder()
 
@@ -189,7 +190,9 @@ func TestHandleGetMessage_MalformedPath(t *testing.T) {
 
 func TestHandleGetMessage_NotFound(t *testing.T) {
 	f := newFixture()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/messages/abc/wrongcookie", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/messages/abc/wrongcookie", nil)
+	req.SetPathValue("shortId", "abc")
+	req.SetPathValue("cookie", "wrongcookie")
 	req.Header.Set("Authorization", "Turnstile token")
 	rr := httptest.NewRecorder()
 
@@ -202,11 +205,12 @@ func TestHandleGetMessage_NotFound(t *testing.T) {
 
 func TestHandleGetMessage_Success(t *testing.T) {
 	f := newFixture()
-	// Pre-populate a record
 	f.ds.records = []*EnigmaRecord{
 		{SKey: "abc", ShortId: "abcdef", Cookie: "testcookie", Content: "secret"},
 	}
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/messages/abcdef/testcookie", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/messages/abcdef/testcookie", nil)
+	req.SetPathValue("shortId", "abcdef")
+	req.SetPathValue("cookie", "testcookie")
 	req.Header.Set("Authorization", "Turnstile token")
 	rr := httptest.NewRecorder()
 

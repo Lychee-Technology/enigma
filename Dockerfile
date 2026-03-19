@@ -1,5 +1,5 @@
 # Stage 1: Build the Go binary
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -18,27 +18,41 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o enigma ./cmd/main
 # Stage 2: Final image with Nginx and the Go binary
 FROM alpine:latest
 
-# Install nginx
-RUN apk add --no-cache nginx
+# Install nginx and su-exec (for privilege drop)
+RUN apk add --no-cache nginx su-exec
 
 # Create run directory for nginx
 RUN mkdir -p /run/nginx
 
-WORKDIR /root/
+# Create a non-root user for the Go application
+RUN addgroup -S enigmagroup && adduser -S -G enigmagroup enigmauser
+
+# Create cert directory — certificates must be mounted at runtime
+# (do NOT copy test/*.pem here; use: -v /path/to/certs:/usr/share/nginx/cert:ro)
+RUN mkdir -p /usr/share/nginx/cert
+
+WORKDIR /app
 
 # Copy the Go binary from builder stage
-COPY --from=builder /app/enigma /root/enigma
+COPY --from=builder /app/enigma /app/enigma
+RUN chown enigmauser:enigmagroup /app/enigma
 
 # Copy nginx configuration
 COPY config/nginx.conf /etc/nginx/nginx.conf
-COPY test/*.pem /usr/share/nginx/cert/
 
 # Copy static assets
 COPY public /usr/share/nginx/html/public
 
-# Expose HTTP port
+# Copy entrypoint script
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Expose HTTPS port
 EXPOSE 443
 
+# Health check via the /health endpoint on the internal port
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:18080/health || exit 1
 
-# Launch nginx and the Go application
-CMD ["sh", "-c", "nginx && /root/enigma"]
+# Entrypoint injects env-specific config, starts nginx, then runs Go app as non-root
+ENTRYPOINT ["/app/entrypoint.sh"]

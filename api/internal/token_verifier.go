@@ -40,7 +40,7 @@ func (token *ClientToken) toValues(secret string) (*url.Values, error) {
 		"idempotency_key": {idempotencyKey},
 	}
 
-	if token.IP == "" {
+	if token.IP != "" {
 		values.Set("remoteip", token.IP)
 	}
 
